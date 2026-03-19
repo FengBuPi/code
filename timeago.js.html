@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="//unpkg.com/timeago.js@4.0.2/dist/timeago.min.js"></script>
+  <script>
+    // format timestamp
+    console.log(timeago.format(1544666010224));
+
+
+    // format date instance
+    console.log(timeago.format(new Date(1544666010224)));
+
+    // format date string
+    console.log(timeago.format('2018-12-12'));
+
+    // format with locale
+    console.log(timeago.format(1544666010224, 'zh_CN'));
+
+    // format with locale and relative date
+    console.log(timeago.format(1544666010224, 'zh_CN', { relativeDate: '2018-11-11' }));
+
+    // e.g.
+    console.log(timeago.format(Date.now() - 11 * 1000 * 60 * 60)); // returns '11 hours ago'
+  </script>
+</body>
+
+<style>
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+</style>
+
+</html>

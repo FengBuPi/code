@@ -21,42 +21,44 @@ class Scheduler {
   }
 
   // 调用add返回的是一个Promise
-  async add(promiseCreator: () => Promise<unknown>) {
-    return new Promise((resolve, reject) => {
-      this.taskList.push({
-        promiseCreator,
-        resolve,
-        reject,
-      });
-      this.task();
+  async add(promiseCreator: () => Promise<unknown>): Promise<unknown> {
+    const { promise, resolve, reject } = Promise.withResolvers();
+    this.taskList.push({
+      promiseCreator,
+      resolve,
+      reject,
     });
+    this.task();
+    return promise;
   }
 
-  private task() {
-    if (this.currentTask < this.maxCount && this.taskList.length > 0) {
-      const { promiseCreator, resolve, reject } = this.taskList.shift()!;
+  private async task() {
+    if (this.taskList.length <= 0 || this.currentTask >= this.maxCount) return;
+    const { promiseCreator, resolve, reject } = this.taskList.shift()!;
+    try {
       this.currentTask++;
-      promiseCreator()
-        .then(resolve)
-        .catch(reject)
-        .finally(() => {
-          this.currentTask--;
-          this.task();
-        });
+      const res = await promiseCreator();
+      resolve(res);
+    } catch (error) {
+      reject(error);
+    } finally {
+      this.currentTask--;
+      this.task();
     }
   }
 }
 
 //测试用例：
 const scheduler = new Scheduler();
-// console.log(!!scheduler.task) // 不存在task方法
+
 const task = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 
-const addTask = (ms: number, order: string) => {
-  scheduler.add(() => task(ms)).then(() => console.log(ms, order));
+const addTask = async (ms: number, order: string) => {
+  await scheduler.add(() => task(ms));
+  console.log(ms, order);
 };
 
 addTask(1000, "1");

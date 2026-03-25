@@ -21,42 +21,45 @@ class Scheduler {
   }
 
   // 调用add返回的是一个Promise
-  async add(promiseCreator: () => Promise<unknown>) {
-    return new Promise((resolve, reject) => {
-      this.taskList.push({
-        promiseCreator,
-        resolve,
-        reject,
-      });
-      this.task();
+  async add(promiseCreator: () => Promise<unknown>): Promise<unknown> {
+    const { promise, resolve, reject } = Promise.withResolvers();
+    this.taskList.push({
+      promiseCreator,
+      resolve,
+      reject,
     });
+    this.task();
+    return promise;
   }
 
-  private task() {
+  private async task() {
     if (this.currentTask < this.maxCount && this.taskList.length > 0) {
       const { promiseCreator, resolve, reject } = this.taskList.shift()!;
-      this.currentTask++;
-      promiseCreator()
-        .then(resolve)
-        .catch(reject)
-        .finally(() => {
-          this.currentTask--;
-          this.task();
-        });
+      try {
+        this.currentTask++;
+        const result = await promiseCreator();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      } finally {
+        this.currentTask--;
+        this.task();
+      }
     }
   }
 }
 
 //测试用例：
 const scheduler = new Scheduler();
-// console.log(!!scheduler.task) // 不存在task方法
+
 const task = (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 
-const addTask = (ms: number, order: string) => {
-  scheduler.add(() => task(ms)).then(() => console.log(ms, order));
+const addTask = async (ms: number, order: string) => {
+  await scheduler.add(() => task(ms));
+  console.log(ms, order);
 };
 
 addTask(1000, "1");
@@ -68,3 +71,6 @@ addTask(400, "4");
 // 300 '3'
 // 1000 '1'
 // 400 '4'
+
+// 题目解析：本质上是用一个 promise 来包裹内部的任务，
+// 该 promise 是否完成(无论成功还是失败)依赖于调度器什么时候触发该任务
